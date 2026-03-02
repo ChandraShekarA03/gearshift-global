@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  role      String    @default("Customer") // Admin, Vendor, Customer, Garage
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  vehicles  Vehicle[]
+  orders    Order[]
+  parts     Part[]    @relation("VendorParts")
+}
+
+model Vehicle {
+  id        String   @id @default(cuid())
+  make      String
+  model     String
+  year      Int
+  vin       String?  @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Part {
+  id              String   @id @default(cuid())
+  sku             String   @unique
+  name            String
+  description     String
+  price           Float
+  condition       String   // New, Refurbished
+  compatibility   String   // Stored as JSON string e.g. '["Honda Civic 2020", ...]'
+  carbonFootprint Float    // CO2 savings or footprint score
+  vendorId        String
+  vendor          User     @relation("VendorParts", fields: [vendorId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  orderItems      OrderItem[]
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  status         String      @default("Pending") // Pending, Shipped, Delivered, Cancelled
+  currency       String      @default("USD")
+  totalAmount    Float
+  shippingRoute  String?
+  ecoShipping    Boolean     @default(false)
+  carbonSaved    Float       @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  items          OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  partId    String
+  part      Part     @relation(fields: [partId], references: [id])
+  quantity  Int      @default(1)
+  price     Float
+}
