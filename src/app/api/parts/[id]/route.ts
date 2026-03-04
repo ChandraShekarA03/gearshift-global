@@ -6,11 +6,12 @@ export const dynamic = 'force-dynamic';
 // GET /api/parts/[id] - Get a specific part by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const part = await prisma.part.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         manufacturer: { select: { name: true } },
         vendor: { select: { name: true, email: true } },
@@ -62,21 +63,22 @@ export async function GET(
 // DELETE /api/parts/[id] - Delete a specific part
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Delete part and all related records in a transaction
     await prisma.$transaction(async (tx) => {
       // Delete related records first (due to foreign key constraints)
-      await (tx as any).partCategory.deleteMany({ where: { partId: params.id } });
-      await (tx as any).fitment.deleteMany({ where: { partId: params.id } });
-      await (tx as any).inventory.deleteMany({ where: { partId: params.id } });
-      await (tx as any).review.deleteMany({ where: { partId: params.id } });
-      await (tx as any).orderItem.deleteMany({ where: { partId: params.id } });
-      await (tx as any).warranty.deleteMany({ where: { partId: params.id } });
+      await (tx as any).partCategory.deleteMany({ where: { partId: id } });
+      await (tx as any).fitment.deleteMany({ where: { partId: id } });
+      await (tx as any).inventory.deleteMany({ where: { partId: id } });
+      await (tx as any).review.deleteMany({ where: { partId: id } });
+      await (tx as any).orderItem.deleteMany({ where: { partId: id } });
+      await (tx as any).warranty.deleteMany({ where: { partId: id } });
 
       // Finally delete the part
-      await (tx as any).part.delete({ where: { id: params.id } });
+      await (tx as any).part.delete({ where: { id } });
     });
 
     return NextResponse.json({ message: 'Part deleted successfully' });
