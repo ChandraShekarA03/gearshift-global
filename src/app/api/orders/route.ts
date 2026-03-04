@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
     const userId = searchParams.get('userId');
+    const vendorId = searchParams.get('vendorId');
     const status = searchParams.get('status');
 
     // Build where clause for filtering
@@ -27,6 +28,17 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status;
+    }
+
+    // If vendorId is provided, filter orders containing parts from that vendor
+    if (vendorId) {
+      where.items = {
+        some: {
+          part: {
+            vendorId: vendorId
+          }
+        }
+      };
     }
 
     const [orders, totalCount] = await Promise.all([
@@ -51,7 +63,7 @@ export async function GET(request: NextRequest) {
           items: {
             include: {
               part: {
-                select: { name: true, sku: true }
+                select: { name: true, sku: true, vendorId: true }
               }
             }
           }

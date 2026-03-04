@@ -9,15 +9,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID and email are required' }, { status: 400 });
     }
 
-    // Check if user exists in database
-    let dbUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (!dbUser) {
-      // Create new user in database
-      dbUser = await prisma.user.create({
-        data: {
+    // Upsert user to avoid race conditions
+    try {
+      const dbUser = await prisma.user.upsert({
+        where: { email },
+        update: {
+          name: metadata?.name || undefined,
+          role: metadata?.role || undefined,
+          phone: metadata?.phone || undefined,
+          avatar: metadata?.avatar_url || undefined,
+        },
+        create: {
           id: userId,
           email,
           name: metadata?.name || null,
@@ -26,20 +28,18 @@ export async function POST(request: NextRequest) {
           avatar: metadata?.avatar_url || null,
         },
       });
-    } else {
-      // Update existing user
-      dbUser = await prisma.user.update({
-        where: { email },
-        data: {
-          name: metadata?.name || dbUser.name,
-          role: metadata?.role || dbUser.role,
-          phone: metadata?.phone || dbUser.phone,
-          avatar: metadata?.avatar_url || dbUser.avatar,
-        },
-      });
-    }
 
-    return NextResponse.json({ user: dbUser });
+      return NextResponse.json({ user: dbUser });
+    } catch (error: any) {
+      // If there's still a unique constraint error, fetch the existing user
+      if (error.code === 'P2002') {
+        const existingUser = await prisma.user.findUnique({
+          where: { email }
+        });
+        return NextResponse.json({ user: existingUser });
+      }
+      throw error;
+    }
   } catch (error: any) {
     console.error('Error syncing user:', error);
     return NextResponse.json(

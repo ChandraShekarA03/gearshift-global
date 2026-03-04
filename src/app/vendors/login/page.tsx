@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Lock, AlertCircle, Package, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,10 +19,11 @@ export default function VendorLoginPage() {
   const router = useRouter();
 
   // Redirect if already logged in as vendor
-  if (user && isVendor) {
-    router.push('/vendors/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (user && isVendor) {
+      router.push('/vendors/dashboard');
+    }
+  }, [user, isVendor, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

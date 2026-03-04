@@ -28,6 +28,17 @@ async function main() {
     }
   });
 
+  // Create the real vendor account
+  const realVendor = await prisma.user.upsert({
+    where: { email: 'achandrashekara03@gmail.com' },
+    update: { role: 'Vendor' },
+    create: {
+      email: 'achandrashekara03@gmail.com',
+      name: 'Chandrasekhar',
+      role: 'Vendor'
+    }
+  });
+
   // Create Addresses
   console.log('Creating addresses...');
   const shippingAddress = await prisma.address.create({

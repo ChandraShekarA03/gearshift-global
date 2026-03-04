@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -33,7 +34,7 @@ model Garage {
   name        String
   description String?
   location    String?
-  services    String[] // Stored as array of service names
+  services    String[]  // Array of service names
   rating      Float    @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -176,18 +176,26 @@ export default function ProfilePage() {
 
                 {/* Recent Orders */}
                 <div className="bg-surface rounded-lg p-6">
-                  <h3 className="text-xl font-semibold mb-4">Recent Orders</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold">Recent Orders</h3>
+                    <Link
+                      href="/profile/orders"
+                      className="text-primary hover:underline text-sm font-medium"
+                    >
+                      View All Orders →
+                    </Link>
+                  </div>
                   <div className="space-y-4">
                     {orders.slice(0, 3).map((order) => (
                       <div key={order.id} className="flex items-center justify-between p-4 bg-background rounded-lg">
                         <div>
-                          <p className="font-medium">{order.id}</p>
+                          <p className="font-medium">Order #{order.id.substring(0, 8).toUpperCase()}</p>
                           <p className="text-sm text-muted-foreground">
                             {order.items.length} items • {new Date(order.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">${order.totalAmount}</p>
+                          <p className="font-semibold">${order.totalAmount.toFixed(2)}</p>
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
                             order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
@@ -198,6 +206,9 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     ))}
+                    {orders.length === 0 && (
+                      <p className="text-center text-muted-foreground py-4">No orders yet</p>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -209,7 +220,15 @@ export default function ProfilePage() {
                 animate={{ opacity: 1 }}
                 className="space-y-6"
               >
-                <h2 className="text-2xl font-bold">Order History</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Order History</h2>
+                  <Link
+                    href="/profile/orders"
+                    className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+                  >
+                    View Detailed Tracking
+                  </Link>
+                </div>
 
                 {loading ? (
                   <div className="text-center py-8">Loading orders...</div>
@@ -219,10 +238,15 @@ export default function ProfilePage() {
                       <div key={order.id} className="bg-surface rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
                           <div>
-                            <h3 className="font-semibold">{order.id}</h3>
+                            <h3 className="font-semibold">Order #{order.id.substring(0, 8).toUpperCase()}</h3>
                             <p className="text-sm text-muted-foreground">
                               {new Date(order.createdAt).toLocaleDateString()}
                             </p>
+                            {order.trackingNumber && (
+                              <p className="text-sm text-primary mt-1">
+                                Tracking: {order.trackingNumber}
+                              </p>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="text-2xl font-bold">${order.totalAmount.toFixed(2)}</p>
@@ -246,6 +270,12 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     ))}
+                    {orders.length === 0 && (
+                      <div className="text-center py-12">
+                        <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No orders yet</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </motion.div>
