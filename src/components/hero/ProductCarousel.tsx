@@ -14,6 +14,9 @@ import {
     Award,
     Package
 } from 'lucide-react';
+import { useCartStore } from '@/store/useCartStore';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -131,6 +134,32 @@ interface ProductCardProps {
 }
 
 function ProductCard({ product, index }: ProductCardProps) {
+    const { addItem } = useCartStore();
+    const router = useRouter();
+    const [isLiked, setIsLiked] = useState(false);
+
+    const handleAddToCart = () => {
+        addItem({
+            id: product.id.toString(),
+            name: product.name,
+            price: product.price,
+            condition: 'New' as const,
+            sku: `PC-${product.id}`,
+            description: product.features.join(', '),
+            carbonFootprint: 2.5 // Default carbon footprint
+        });
+    };
+
+    const handleLike = () => {
+        setIsLiked(!isLiked);
+        // You could add toast notification here or save to localStorage
+    };
+
+    const handlePreview = () => {
+        // Navigate to parts page with search for this product
+        router.push(`/parts?search=${encodeURIComponent(product.name)}`);
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -153,21 +182,31 @@ function ProductCard({ product, index }: ProductCardProps) {
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
+                            onClick={handlePreview}
                             className="p-3 bg-white/20 backdrop-blur-sm rounded-full text-white hover:bg-white/30 transition-colors"
+                            title="Preview product"
                         >
                             <Eye className="h-5 w-5" />
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            className="p-3 bg-white/20 backdrop-blur-sm rounded-full text-white hover:bg-white/30 transition-colors"
+                            onClick={handleLike}
+                            className={`p-3 backdrop-blur-sm rounded-full transition-colors ${
+                                isLiked 
+                                    ? 'bg-red-500/80 text-white hover:bg-red-600' 
+                                    : 'bg-white/20 text-white hover:bg-white/30'
+                            }`}
+                            title={isLiked ? "Remove from favorites" : "Add to favorites"}
                         >
-                            <Heart className="h-5 w-5" />
+                            <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
+                            onClick={handleAddToCart}
                             className="p-3 bg-primary/80 backdrop-blur-sm rounded-full text-white hover:bg-primary transition-colors"
+                            title="Add to cart"
                         >
                             <ShoppingCart className="h-5 w-5" />
                         </motion.button>
@@ -265,6 +304,7 @@ function ProductCard({ product, index }: ProductCardProps) {
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
+                            onClick={handleAddToCart}
                             className="w-full btn-primary flex items-center justify-center space-x-2 py-3"
                         >
                             <ShoppingCart className="h-4 w-4" />
@@ -284,7 +324,7 @@ export default function ProductCarousel() {
     });
 
     return (
-        <section ref={ref} className="py-24 bg-gradient-to-br from-background to-surface relative overflow-hidden">
+        <section ref={ref} className="py-24 relative overflow-hidden">
             {/* Background Elements */}
             <div className="absolute top-1/4 -left-20 w-80 h-80 bg-accent/5 rounded-full blur-3xl"></div>
             <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>

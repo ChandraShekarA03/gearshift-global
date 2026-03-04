@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from 'next/link';
 import { AuthProvider } from '@/contexts/AuthContext';
 import Header from '@/components/layout/Header';
+import ToastNotification from '@/components/ToastNotification';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,60 +27,63 @@ export default function RootLayout({
 
             {/* Main Content */}
             <main className="flex-1">
-            {children}
-          </main>
+              {children}
+            </main>
 
-          {/* Footer */}
-          <footer className="border-t border-border bg-surface">
-            <div className="max-width container-padding section-padding">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {/* Brand */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                      <span className="text-lg font-bold text-white">G</span>
+            {/* Toast Notifications */}
+            <ToastNotification />
+
+            {/* Footer */}
+            <footer className="bg-surface border-t border-border">
+              <div className="max-width container-padding py-12">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                  {/* Brand */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                        <span className="text-lg font-bold text-white">G</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold">GearShift Global</h3>
+                        <p className="text-sm text-muted-foreground">Premium Automotive Parts</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold">GearShift Global</h3>
-                      <p className="text-sm text-muted-foreground">Premium Automotive Parts</p>
+                    <p className="text-sm text-muted-foreground">
+                      Revolutionizing automotive parts sourcing with guaranteed fitment and global delivery.
+                    </p>
+                  </div>
+
+                  {/* Platform */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Platform</h4>
+                    <div className="space-y-2">
+                      <Link href="/parts" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        Browse Parts
+                      </Link>
+                      <Link href="/garage" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        My Garage
+                      </Link>
+                      <Link href="/compatibility" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        Compatibility
+                      </Link>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Revolutionizing automotive parts sourcing with guaranteed fitment and global delivery.
-                  </p>
-                </div>
 
-                {/* Platform */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Platform</h4>
-                  <div className="space-y-2">
-                    <Link href="/parts" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      Browse Parts
-                    </Link>
-                    <Link href="/garage" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      My Garage
-                    </Link>
-                    <Link href="/compatibility" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      Compatibility
-                    </Link>
+                  {/* Support */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold">Support</h4>
+                    <div className="space-y-2">
+                      <Link href="/help" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        Help Center
+                      </Link>
+                      <Link href="/contact" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        Contact Us
+                      </Link>
+                      <Link href="/shipping" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        Shipping Info
+                      </Link>
+                    </div>
                   </div>
-                </div>
-
-                {/* Support */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Support</h4>
-                  <div className="space-y-2">
-                    <Link href="/help" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      Help Center
-                    </Link>
-                    <Link href="/contact" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      Contact Us
-                    </Link>
-                    <Link href="/shipping" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      Shipping Info
-                    </Link>
-                  </div>
-                </div>
 
                 {/* Company */}
                 <div className="space-y-4">

@@ -11,12 +11,103 @@ model User {
   email     String    @unique
   name      String?
   role      String    @default("Customer") // Admin, Vendor, Customer, Garage
+  phone     String?
+  avatar    String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  vehicles  Vehicle[]
-  orders    Order[]
-  parts     Part[]    @relation("VendorParts")
+  vehicles      Vehicle[]
+  orders        Order[]
+  parts         Part[]        @relation("VendorParts")
+  reviews       Review[]
+  addresses     Address[]
+  paymentMethods PaymentMethod[]
+  garage        Garage?
+}
+
+model Garage {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  location    String?
+  services    String[] // Stored as array of service names
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   @default("Shipping") // Shipping, Billing
+  street      String
+  city        String
+  state       String
+  zipCode     String
+  country     String   @default("US")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shippingOrders Order[] @relation("OrderShippingAddress")
+  billingOrders  Order[] @relation("OrderBillingAddress")
+}
+
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // Credit Card, PayPal, etc.
+  provider    String   // Visa, Mastercard, etc.
+  lastFour    String
+  expiryMonth Int
+  expiryYear  Int
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      Order[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  parentId    String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parts       PartCategory[]
+}
+
+model Manufacturer {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  website     String?
+  logo        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parts       Part[]
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  contactEmail String?
+  contactPhone String?
+  address     String?
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parts       Part[]
 }
 
 model Vehicle {
@@ -25,10 +116,15 @@ model Vehicle {
   model     String
   year      Int
   vin       String?  @unique
+  engine    String?
+  transmission String?
+  drivetrain String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  fitments  Fitment[]
 }
 
 model Part {
@@ -37,27 +133,131 @@ model Part {
   name            String
   description     String
   price           Float
-  condition       String   // New, Refurbished
-  compatibility   String   // Stored as JSON string e.g. '["Honda Civic 2020", ...]'
-  carbonFootprint Float    // CO2 savings or footprint score
+  condition       String   // New, Refurbished, Used
+  weight          Float?
+  dimensions      String?  // JSON string for dimensions
+  carbonFootprint Float    @default(0)
+  warrantyPeriod  Int?     // In months
   vendorId        String
   vendor          User     @relation("VendorParts", fields: [vendorId], references: [id])
+  manufacturerId  String?
+  manufacturer    Manufacturer? @relation(fields: [manufacturerId], references: [id])
+  supplierId      String?
+  supplier        Supplier? @relation(fields: [supplierId], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
+  categories      PartCategory[]
+  fitments        Fitment[]
   orderItems      OrderItem[]
+  reviews         Review[]
+  inventory       Inventory?
+  warranties      Warranty[]
+}
+
+model PartCategory {
+  id         String   @id @default(cuid())
+  partId     String
+  part       Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  isPrimary  Boolean  @default(false)
+
+  @@unique([partId, categoryId])
+}
+
+model Fitment {
+  id        String   @id @default(cuid())
+  partId    String
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  notes     String?
+
+  @@unique([partId, vehicleId])
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  partId    String   @unique
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(0)
+  location  String?  // Warehouse location
+  minStock  Int      @default(0)
+  maxStock  Int?
+  lastRestocked DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  partId    String
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5
+  title     String?
+  comment   String?
+  verified  Boolean  @default(false) // Purchased and verified
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Warranty {
+  id          String   @id @default(cuid())
+  partId      String
+  part        Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+  type        String   // Manufacturer, Seller
+  duration    Int      // In months
+  coverage    String   // What is covered
+  exclusions  String?  // What is not covered
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Promotion {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  description String
+  type        String   // Percentage, Fixed Amount
+  value       Float
+  minOrder    Float?
+  maxDiscount Float?
+  startDate   DateTime
+  endDate     DateTime
+  usageLimit  Int?
+  usageCount  Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      Order[]
 }
 
 model Order {
   id             String      @id @default(cuid())
   userId         String
   user           User        @relation(fields: [userId], references: [id])
-  status         String      @default("Pending") // Pending, Shipped, Delivered, Cancelled
+  status         String      @default("Pending") // Pending, Confirmed, Shipped, Delivered, Cancelled, Returned
   currency       String      @default("USD")
+  subtotal       Float
+  taxAmount      Float       @default(0)
+  shippingAmount Float       @default(0)
   totalAmount    Float
   shippingRoute  String?
   ecoShipping    Boolean     @default(false)
   carbonSaved    Float       @default(0)
+  promotionId    String?
+  promotion      Promotion?  @relation(fields: [promotionId], references: [id])
+  shippingAddressId String?
+  shippingAddress Address?   @relation("OrderShippingAddress", fields: [shippingAddressId], references: [id])
+  billingAddressId  String?
+  billingAddress  Address?   @relation("OrderBillingAddress", fields: [billingAddressId], references: [id])
+  paymentMethodId String?
+  paymentMethod  PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  trackingNumber String?
+  notes         String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -72,4 +272,7 @@ model OrderItem {
   part      Part     @relation(fields: [partId], references: [id])
   quantity  Int      @default(1)
   price     Float
+  discount  Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

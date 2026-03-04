@@ -63,7 +63,7 @@ export default function ContactPage() {
               <div>
                 <h2 className="text-3xl font-bold mb-4">Get In Touch</h2>
                 <p className="text-muted-foreground">
-                  Fill out the form below and we'll get back to you within 24 hours.
+                  Fill out the form below and we&apos;ll get back to you within 24 hours.
                 </p>
               </div>
 

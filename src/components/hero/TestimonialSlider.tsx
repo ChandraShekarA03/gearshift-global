@@ -60,7 +60,7 @@ const testimonials = [
 
 export default function TestimonialSlider() {
     return (
-        <section className="py-24 bg-gradient-to-br from-surface to-background relative overflow-hidden">
+        <section className="py-24 relative overflow-hidden">
             {/* Background decorative elements */}
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
@@ -140,7 +140,7 @@ export default function TestimonialSlider() {
 
                                     {/* Testimonial Text */}
                                     <p className="text-muted-foreground text-center mb-8 leading-relaxed">
-                                        "{testimonial.text}"
+                                        &quot;{testimonial.text}&quot;
                                     </p>
 
                                     {/* Author Info */}

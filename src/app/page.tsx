@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import AnimatedStats from '@/components/hero/AnimatedStats';
 import EnhancedHeroSection from '@/components/hero/EnhancedHeroSection';
 import FeatureShowcase from '@/components/hero/FeatureShowcase';
@@ -8,12 +8,10 @@ import ProductCarousel from '@/components/hero/ProductCarousel';
 import TestimonialSlider from '@/components/hero/TestimonialSlider';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { 
-  ArrowRight, 
-  CheckCircle, 
+import {
+  ArrowRight,
+  CheckCircle,
   Sparkles,
-  Zap,
-  Globe,
   Shield,
   Award
 } from 'lucide-react';
@@ -27,10 +25,77 @@ function LoadingFallback() {
   );
 }
 
+// Scrolling Gradient Background Component
+function ScrollingGradientBackground() {
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Calculate gradient based on scroll position
+  const getGradientColors = () => {
+    // Check if we're on the client side
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      // Return default gradient for SSR
+      return {
+        from: 'from-gray-900',
+        via: 'via-black',
+        to: 'to-gray-900'
+      };
+    }
+
+    const scrollPercent = Math.min(scrollY / Math.max(document.documentElement.scrollHeight - window.innerHeight, 1), 1);
+
+    // Define gradient stops for different sections
+    const gradients = [
+      // Hero section - dark to surface
+      { from: 'from-gray-900', via: 'via-black', to: 'to-gray-900' },
+      // Stats section - transition to surface
+      { from: 'from-gray-800', via: 'via-gray-700', to: 'to-gray-600' },
+      // Product carousel - surface tones
+      { from: 'from-slate-800', via: 'via-slate-700', to: 'to-slate-600' },
+      // Feature showcase - accent colors
+      { from: 'from-blue-900', via: 'via-indigo-800', to: 'to-purple-800' },
+      // Testimonials - warm tones
+      { from: 'from-purple-800', via: 'via-pink-700', to: 'to-rose-700' },
+      // Final CTA - primary colors
+      { from: 'from-primary', via: 'via-primary/90', to: 'to-accent' }
+    ];
+
+    const sectionHeight = 1 / gradients.length;
+    const currentSection = Math.max(0, Math.min(Math.floor(scrollPercent / sectionHeight), gradients.length - 1));
+    const sectionProgress = (scrollPercent % sectionHeight) / sectionHeight;
+
+    const currentGradient = gradients[currentSection];
+    const nextSectionIndex = Math.min(currentSection + 1, gradients.length - 1);
+    const nextGradient = gradients[nextSectionIndex];
+
+    // Ensure gradients exist (should always be true with bounds checking above)
+    if (!currentGradient || !nextGradient) {
+      return gradients[0]; // Fallback to first gradient
+    }
+
+    // For smooth transitions, interpolate between current and next
+    // For now, just return the current gradient to avoid interpolation issues
+    return currentGradient;
+  };
+
+  const gradient = getGradientColors();
+
+  return (
+    <div
+      className={`fixed inset-0 -z-10 bg-gradient-to-br ${gradient.from} ${gradient.via} ${gradient.to} transition-all duration-300 ease-out`}
+    />
+  );
+}
+
 // Final CTA Section Component
 function FinalCTASection() {
   return (
-    <section className="relative py-32 bg-gradient-to-br from-primary via-primary/90 to-accent overflow-hidden">
+    <section className="relative py-32 overflow-hidden">
       <div className="max-width container-padding relative z-10 text-center">
         <motion.div
           initial={{ opacity: 0, y: 60 }}
@@ -133,7 +198,10 @@ function FinalCTASection() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen relative">
+      {/* Scrolling Gradient Background */}
+      <ScrollingGradientBackground />
+
       {/* Enhanced Hero Section */}
       <Suspense fallback={<LoadingFallback />}>
         <EnhancedHeroSection />

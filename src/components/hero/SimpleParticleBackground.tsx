@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function SimpleParticleBackground() {
-    const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number}>>([]);
-
-    useEffect(() => {
+    const [particles] = useState<Array<{id: number, x: number, y: number, size: number, speed: number}>>(() => {
         const particleArray = [];
         for (let i = 0; i < 50; i++) {
             particleArray.push({
@@ -16,8 +14,8 @@ export default function SimpleParticleBackground() {
                 speed: Math.random() * 2 + 0.5
             });
         }
-        setParticles(particleArray);
-    }, []);
+        return particleArray;
+    });
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

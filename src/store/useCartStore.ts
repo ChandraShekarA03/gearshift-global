@@ -4,17 +4,22 @@ interface PartItem {
     id: string;
     name: string;
     price: number;
-    condition: 'New' | 'Refurbished';
+    condition: 'New' | 'Refurbished' | 'Used';
     co2SavingsKg?: number; // Estimated savings for using refurbished
+    sku?: string;
+    description?: string;
+    carbonFootprint?: number;
 }
 
 interface CartState {
     items: PartItem[];
     ecoShippingActive: boolean;
+    successMessage: string | null;
     setEcoShipping: (active: boolean) => void;
     addItem: (item: PartItem) => void;
     removeItem: (id: string) => void;
     clearCart: () => void;
+    setSuccessMessage: (message: string | null) => void;
 
     // Computed totals
     getCartTotal: () => number;
@@ -22,21 +27,24 @@ interface CartState {
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
-    items: [
-        // Pre-fill a mock item for demonstration
-        { id: 'mock-1', name: 'Refurbished Alternator - Honda Civic', price: 125, condition: 'Refurbished', co2SavingsKg: 45 }
-    ],
+    items: [], // Start with empty cart - will be populated from real data
     ecoShippingActive: false,
+    successMessage: null,
 
     setEcoShipping: (active) => set({ ecoShippingActive: active }),
 
-    addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+    addItem: (item) => set((state) => ({ 
+        items: [...state.items, item],
+        successMessage: `${item.name} added to cart!`
+    })),
 
     removeItem: (id) => set((state) => ({
         items: state.items.filter(item => item.id !== id)
     })),
 
     clearCart: () => set({ items: [] }),
+
+    setSuccessMessage: (message) => set({ successMessage: message }),
 
     getCartTotal: () => {
         const itemTotal = get().items.reduce((sum, item) => sum + item.price, 0);

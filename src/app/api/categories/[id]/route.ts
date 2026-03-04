@@ -3,35 +3,46 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/users/[id] - Get a specific user
+// GET /api/categories/[id] - Get a specific category
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const { data: user, error } = await supabase
-      .from('User')
-      .select('*')
+    const { data: category, error } = await supabase
+      .from('Category')
+      .select(`
+        *,
+        children:Category[](
+          id,
+          name,
+          description
+        ),
+        parent:Category(
+          id,
+          name
+        )
+      `)
       .eq('id', id)
       .single();
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 });
       }
-      console.error('Error fetching user:', error);
-      return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+      console.error('Error fetching category:', error);
+      return NextResponse.json({ error: 'Failed to fetch category' }, { status: 500 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json(category);
   } catch (error) {
     console.error('Server error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// PUT /api/users/[id] - Update a specific user
+// PUT /api/categories/[id] - Update a specific category
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -39,15 +50,15 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { email, name, role } = body;
+    const { name, description, parentId } = body;
 
     const updateData: Record<string, unknown> = {};
-    if (email !== undefined) updateData.email = email;
     if (name !== undefined) updateData.name = name;
-    if (role !== undefined) updateData.role = role;
+    if (description !== undefined) updateData.description = description;
+    if (parentId !== undefined) updateData.parentId = parentId;
 
-    const { data: user, error } = await supabase
-      .from('User')
+    const { data: category, error } = await supabase
+      .from('Category')
       .update(updateData)
       .eq('id', id)
       .select()
@@ -55,20 +66,20 @@ export async function PUT(
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 });
       }
-      console.error('Error updating user:', error);
-      return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+      console.error('Error updating category:', error);
+      return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json(category);
   } catch (error) {
     console.error('Server error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE /api/users/[id] - Delete a specific user
+// DELETE /api/categories/[id] - Delete a specific category
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -76,16 +87,16 @@ export async function DELETE(
   try {
     const { id } = await params;
     const { error } = await supabase
-      .from('User')
+      .from('Category')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting user:', error);
-      return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+      console.error('Error deleting category:', error);
+      return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'User deleted successfully' });
+    return NextResponse.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Server error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

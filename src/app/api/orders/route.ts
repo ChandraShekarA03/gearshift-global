@@ -3,6 +3,12 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+interface OrderItemInput {
+  partId: string;
+  quantity: number;
+  price: number;
+}
+
 // GET /api/orders - Get all orders with optional filtering
 export async function GET(request: NextRequest) {
   try {
@@ -17,10 +23,15 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         user:User(name, email),
+        promotion:Promotion(code, description),
+        shippingAddress:Address(street, city, state, zipCode, country),
+        billingAddress:Address(street, city, state, zipCode, country),
+        paymentMethod:PaymentMethod(type, lastFour),
         items:OrderItem(
           id,
           quantity,
           price,
+          discount,
           part:Part(name, sku)
         )
       `)
@@ -59,7 +70,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, items, currency, shippingRoute, ecoShipping, carbonSaved } = body;
+    const { 
+      userId, 
+      items, 
+      currency, 
+      shippingRoute, 
+      ecoShipping, 
+      carbonSaved,
+      promotionCode,
+      shippingAddressId,
+      billingAddressId,
+      paymentMethodId,
+      notes
+    } = body;
 
     // Validate required fields
     if (!userId || !items || items.length === 0) {
@@ -69,8 +92,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate total amount
-    let totalAmount = 0;
+    // Calculate amounts
+    let subtotal = 0;
+    let discount = 0;
     for (const item of items) {
       if (!item.partId || !item.quantity || !item.price) {
         return NextResponse.json(
@@ -78,8 +102,36 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      totalAmount += item.quantity * item.price;
+      subtotal += item.quantity * item.price;
     }
+
+    // Check promotion if provided
+    let promotionId = null;
+    if (promotionCode) {
+      const { data: promotion } = await supabase
+        .from('Promotion')
+        .select('*')
+        .eq('code', promotionCode)
+        .eq('isActive', true)
+        .gte('endDate', new Date().toISOString())
+        .single();
+
+      if (promotion) {
+        promotionId = promotion.id;
+        if (promotion.type === 'Percentage') {
+          discount = subtotal * (promotion.value / 100);
+        } else {
+          discount = Math.min(promotion.value, subtotal);
+        }
+        if (promotion.maxDiscount) {
+          discount = Math.min(discount, promotion.maxDiscount);
+        }
+      }
+    }
+
+    const taxAmount = 0; // Calculate tax based on location
+    const shippingAmount = 0; // Calculate shipping
+    const totalAmount = subtotal - discount + taxAmount + shippingAmount;
 
     // Create order
     const { data: order, error: orderError } = await supabase
@@ -87,10 +139,18 @@ export async function POST(request: NextRequest) {
       .insert({
         userId,
         currency: currency || 'USD',
+        subtotal,
+        taxAmount,
+        shippingAmount,
         totalAmount,
         shippingRoute,
         ecoShipping: ecoShipping || false,
-        carbonSaved: carbonSaved || 0
+        carbonSaved: carbonSaved || 0,
+        promotionId,
+        shippingAddressId,
+        billingAddressId,
+        paymentMethodId,
+        notes
       })
       .select()
       .single();
@@ -101,11 +161,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create order items
-    const orderItems = items.map((item: any) => ({
+    const orderItems = items.map((item: OrderItemInput) => ({
       orderId: order.id,
       partId: item.partId,
       quantity: item.quantity,
-      price: item.price
+      price: item.price,
+      discount: discount * (item.quantity * item.price / subtotal) // Pro-rate discount
     }));
 
     const { error: itemsError } = await supabase
@@ -119,16 +180,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create order items' }, { status: 500 });
     }
 
+    // Update promotion usage
+    if (promotionId) {
+      // Get current usage count
+      const { data: currentPromotion } = await supabase
+        .from('Promotion')
+        .select('usageCount')
+        .eq('id', promotionId)
+        .single();
+
+      if (currentPromotion) {
+        await supabase
+          .from('Promotion')
+          .update({ usageCount: currentPromotion.usageCount + 1 })
+          .eq('id', promotionId);
+      }
+    }
+
     // Fetch complete order with items
     const { data: completeOrder, error: fetchError } = await supabase
       .from('Order')
       .select(`
         *,
         user:User(name, email),
+        promotion:Promotion(code, description),
+        shippingAddress:Address(street, city, state, zipCode, country),
+        billingAddress:Address(street, city, state, zipCode, country),
+        paymentMethod:PaymentMethod(type, lastFour),
         items:OrderItem(
           id,
           quantity,
           price,
+          discount,
           part:Part(name, sku)
         )
       `)

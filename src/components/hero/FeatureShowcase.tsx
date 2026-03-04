@@ -124,7 +124,7 @@ export default function FeatureShowcase() {
     });
 
     return (
-        <section ref={ref} className="py-32 bg-gradient-to-br from-surface via-background to-surface relative overflow-hidden">
+        <section ref={ref} className="py-32 relative overflow-hidden">
             {/* Background decorative elements */}
             <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-r from-accent/10 to-primary/10 rounded-full blur-3xl"></div>

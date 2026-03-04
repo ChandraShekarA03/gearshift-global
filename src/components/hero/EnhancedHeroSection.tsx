@@ -114,7 +114,7 @@ export default function EnhancedHeroSection() {
     };
 
     return (
-        <section className="relative min-h-screen bg-gradient-to-br from-background via-surface to-background overflow-hidden flex items-center">
+        <section className="relative min-h-screen overflow-hidden flex items-center">
             {/* Interactive Particle Background */}
             <div className="absolute inset-0 z-0">
                 <ParticleBackground />
@@ -198,40 +198,14 @@ export default function EnhancedHeroSection() {
                             </div>
                         </motion.div>
 
-                        {/* CTA Buttons */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.8 }}
-                            className="flex flex-col sm:flex-row gap-4"
-                        >
-                            <Link href="/parts">
-                                <motion.button
-                                    whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)" }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="btn-primary text-lg px-8 py-4 flex items-center space-x-2 group"
-                                >
-                                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                                    <span>Browse Parts</span>
-                                </motion.button>
-                            </Link>
 
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="glass text-lg px-8 py-4 hover:glass-hover transition-all flex items-center space-x-2 group"
-                            >
-                                <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                                <span>Watch Demo</span>
-                            </motion.button>
-                        </motion.div>
 
                         {/* Trust Indicators */}
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, delay: 1.0 }}
-                            className="flex flex-wrap items-center gap-6 pt-8"
+                            className="flex flex-wrap items-center gap-6 pt-8 justify-center"
                         >
                             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                                 <Zap className="h-4 w-4 text-accent" />

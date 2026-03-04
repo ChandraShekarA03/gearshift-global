@@ -41,7 +41,7 @@ export async function PUT(
     const body = await request.json();
     const { make, model, year, vin, userId } = body;
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (make !== undefined) updateData.make = make;
     if (model !== undefined) updateData.model = model;
     if (year !== undefined) updateData.year = parseInt(year);

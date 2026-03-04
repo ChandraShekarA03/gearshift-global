@@ -161,7 +161,7 @@ export default function AnimatedStats() {
     });
 
     return (
-        <section ref={ref} className="py-24 bg-gradient-to-br from-background to-surface relative overflow-hidden">
+        <section ref={ref} className="py-24 relative overflow-hidden">
             {/* Background decorative elements */}
             <div className="absolute top-1/4 -left-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
             <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-accent/5 rounded-full blur-3xl"></div>

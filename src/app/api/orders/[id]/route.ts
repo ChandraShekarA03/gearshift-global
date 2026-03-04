@@ -15,10 +15,15 @@ export async function GET(
       .select(`
         *,
         user:User(name, email),
+        promotion:Promotion(code, description),
+        shippingAddress:Address(street, city, state, zipCode, country),
+        billingAddress:Address(street, city, state, zipCode, country),
+        paymentMethod:PaymentMethod(type, lastFour),
         items:OrderItem(
           id,
           quantity,
           price,
+          discount,
           part:Part(name, sku, description)
         )
       `)
@@ -48,13 +53,28 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, shippingRoute, ecoShipping, carbonSaved } = body;
+    const { 
+      status, 
+      shippingRoute, 
+      ecoShipping, 
+      carbonSaved,
+      shippingAddressId,
+      billingAddressId,
+      paymentMethodId,
+      trackingNumber,
+      notes
+    } = body;
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (status !== undefined) updateData.status = status;
     if (shippingRoute !== undefined) updateData.shippingRoute = shippingRoute;
     if (ecoShipping !== undefined) updateData.ecoShipping = ecoShipping;
     if (carbonSaved !== undefined) updateData.carbonSaved = parseFloat(carbonSaved);
+    if (shippingAddressId !== undefined) updateData.shippingAddressId = shippingAddressId;
+    if (billingAddressId !== undefined) updateData.billingAddressId = billingAddressId;
+    if (paymentMethodId !== undefined) updateData.paymentMethodId = paymentMethodId;
+    if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;
+    if (notes !== undefined) updateData.notes = notes;
 
     const { data: order, error } = await supabase
       .from('Order')
@@ -63,10 +83,15 @@ export async function PUT(
       .select(`
         *,
         user:User(name, email),
+        promotion:Promotion(code, description),
+        shippingAddress:Address(street, city, state, zipCode, country),
+        billingAddress:Address(street, city, state, zipCode, country),
+        paymentMethod:PaymentMethod(type, lastFour),
         items:OrderItem(
           id,
           quantity,
           price,
+          discount,
           part:Part(name, sku)
         )
       `)
