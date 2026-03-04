@@ -19,7 +19,7 @@ interface Order {
 }
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
               <div className="mt-8 pt-4 border-t border-border">
                 <button
-                  onClick={logout}
+                  onClick={signOut}
                   className="w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   Sign Out
