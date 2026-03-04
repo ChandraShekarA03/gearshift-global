@@ -88,7 +88,7 @@ export default function ProfilePage() {
               <User size={32} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">{user.name || 'User'}</h1>
+              <h1 className="text-3xl font-bold">{user.user_metadata?.name || 'User'}</h1>
               <p className="text-white/80">{user.email}</p>
               <p className="text-sm text-white/60 mt-1">Member since {new Date().getFullYear()}</p>
             </div>
@@ -304,7 +304,7 @@ export default function ProfilePage() {
                       <label className="block text-sm font-medium mb-2">Name</label>
                       <input
                         type="text"
-                        defaultValue={user.name || ''}
+                        defaultValue={user.user_metadata?.name || ''}
                         className="w-full px-3 py-2 border border-border rounded-lg"
                       />
                     </div>
