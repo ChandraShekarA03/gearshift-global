@@ -9,7 +9,7 @@ import AuthModal from '@/components/auth/AuthModal';
 import { useState } from 'react';
 
 export default function Header() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isVendor, isCustomer } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -18,6 +18,13 @@ export default function Header() {
     { href: '/vendors', label: 'Vendors' },
     { href: '/garage', label: 'Garage' },
     { href: '/hub', label: 'DIY Hub' }
+  ];
+
+  const vendorNavItems = [
+    { label: 'Dashboard', href: '/vendors/dashboard' },
+    { label: 'Add Product', href: '/vendors/products/new' },
+    { label: 'My Products', href: '/vendors/products' },
+    { label: 'Orders', href: '/vendors/orders' },
   ];
 
   return (
@@ -51,17 +58,32 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="relative px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 rounded-lg hover:bg-surface/50 group"
-                >
-                  {item.label}
-                  <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-3/4 transition-all duration-300 -translate-x-1/2"></span>
-                </Link>
-              ))}
-              {user && (
+              {isVendor ? (
+                // Vendor Navigation
+                vendorNavItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="relative px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 rounded-lg hover:bg-surface/50 group"
+                  >
+                    {item.label}
+                    <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-3/4 transition-all duration-300 -translate-x-1/2"></span>
+                  </Link>
+                ))
+              ) : (
+                // Customer/Public Navigation
+                navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="relative px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 rounded-lg hover:bg-surface/50 group"
+                  >
+                    {item.label}
+                    <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-3/4 transition-all duration-300 -translate-x-1/2"></span>
+                  </Link>
+                ))
+              )}
+              {user && !isVendor && (
                 <Link
                   href="/profile"
                   className="relative px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 rounded-lg hover:bg-surface/50 group"
@@ -101,9 +123,16 @@ export default function Header() {
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                         <User className="h-3 w-3 text-primary" />
                       </div>
-                      <span className="text-sm font-medium text-foreground max-w-32 truncate">
-                        {user.email?.split('@')[0]}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground max-w-32 truncate">
+                          {user.email?.split('@')[0]}
+                        </span>
+                        {isVendor && (
+                          <span className="text-xs text-primary font-medium">
+                            Vendor
+                          </span>
+                        )}
+                      </div>
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <button
@@ -161,17 +190,32 @@ export default function Header() {
 
                 {/* Mobile Navigation */}
                 <nav className="space-y-1">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-surface/50 rounded-lg transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  {user && (
+                  {isVendor ? (
+                    // Vendor Mobile Navigation
+                    vendorNavItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-surface/50 rounded-lg transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    ))
+                  ) : (
+                    // Customer/Public Mobile Navigation
+                    navItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-surface/50 rounded-lg transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    ))
+                  )}
+                  {user && !isVendor && (
                     <Link
                       href="/profile"
                       onClick={() => setIsMobileMenuOpen(false)}
@@ -190,9 +234,16 @@ export default function Header() {
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                           <User className="h-4 w-4 text-primary" />
                         </div>
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {user.email}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {user.email}
+                          </span>
+                          {isVendor && (
+                            <span className="text-xs text-primary font-medium">
+                              Vendor
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={() => {

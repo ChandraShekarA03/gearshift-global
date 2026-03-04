@@ -11,10 +11,15 @@ interface Order {
   status: string;
   totalAmount: number;
   createdAt: string;
+  trackingNumber?: string;
   items: Array<{
-    name: string;
+    id: string;
     quantity: number;
     price: number;
+    part: {
+      name: string;
+      sku: string;
+    };
   }>;
 }
 
@@ -25,33 +30,31 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock orders data - in real app, fetch from API
-    const mockOrders: Order[] = [
-      {
-        id: 'ORD-001',
-        status: 'Delivered',
-        totalAmount: 245.99,
-        createdAt: '2024-03-01',
-        items: [
-          { name: 'Brake Pads - Honda Civic', quantity: 1, price: 89.99 },
-          { name: 'Oil Filter', quantity: 1, price: 15.99 },
-          { name: 'Spark Plugs', quantity: 4, price: 140.01 }
-        ]
-      },
-      {
-        id: 'ORD-002',
-        status: 'Shipped',
-        totalAmount: 125.50,
-        createdAt: '2024-02-28',
-        items: [
-          { name: 'Air Filter', quantity: 1, price: 45.50 },
-          { name: 'Cabin Filter', quantity: 1, price: 80.00 }
-        ]
+    if (user?.id) {
+      fetchUserOrders();
+    }
+  }, [user]);
+
+  const fetchUserOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/orders?userId=${user?.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data.orders || []);
+      } else {
+        console.error('Failed to fetch orders');
+        // Fallback to empty orders array
+        setOrders([]);
       }
-    ];
-    setOrders(mockOrders);
-    setLoading(false);
-  }, []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      // Fallback to empty orders array
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -222,7 +225,7 @@ export default function ProfilePage() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-2xl font-bold">${order.totalAmount}</p>
+                            <p className="text-2xl font-bold">${order.totalAmount.toFixed(2)}</p>
                             <span className={`px-3 py-1 rounded-full text-sm ${
                               order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
                               order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
@@ -236,8 +239,8 @@ export default function ProfilePage() {
                         <div className="space-y-2">
                           {order.items.map((item, index) => (
                             <div key={index} className="flex justify-between text-sm">
-                              <span>{item.name} (x{item.quantity})</span>
-                              <span>${item.price}</span>
+                              <span>{item.part.name} (x{item.quantity})</span>
+                              <span>${item.price.toFixed(2)}</span>
                             </div>
                           ))}
                         </div>

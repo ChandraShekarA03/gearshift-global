@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,51 +18,60 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const status = searchParams.get('status');
 
-    let query = supabase
-      .from('Order')
-      .select(`
-        *,
-        user:User(name, email),
-        promotion:Promotion(code, description),
-        shippingAddress:Address(street, city, state, zipCode, country),
-        billingAddress:Address(street, city, state, zipCode, country),
-        paymentMethod:PaymentMethod(type, lastFour),
-        items:OrderItem(
-          id,
-          quantity,
-          price,
-          discount,
-          part:Part(name, sku)
-        )
-      `)
-      .range(offset, offset + limit - 1)
-      .order('createdAt', { ascending: false });
-
-    // Apply filters
+    // Build where clause for filtering
+    const where: any = {};
+    
     if (userId) {
-      query = query.eq('userId', userId);
+      where.userId = userId;
     }
 
     if (status) {
-      query = query.eq('status', status);
+      where.status = status;
     }
 
-    const { data: orders, error, count } = await query;
-
-    if (error) {
-      console.error('Error fetching orders:', error);
-      return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
-    }
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          user: {
+            select: { name: true, email: true }
+          },
+          promotion: {
+            select: { code: true, description: true }
+          },
+          shippingAddress: {
+            select: { street: true, city: true, state: true, zipCode: true, country: true }
+          },
+          billingAddress: {
+            select: { street: true, city: true, state: true, zipCode: true, country: true }
+          },
+          paymentMethod: {
+            select: { type: true, lastFour: true }
+          },
+          items: {
+            include: {
+              part: {
+                select: { name: true, sku: true }
+              }
+            }
+          }
+        },
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.order.count({ where })
+    ]);
 
     return NextResponse.json({
       orders,
-      total: count,
+      total: totalCount,
       limit,
       offset
     });
   } catch (error) {
-    console.error('Server error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching orders:', error);
+    return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 }
 
@@ -102,130 +111,86 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      subtotal += item.quantity * item.price;
+      subtotal += item.price * item.quantity;
     }
 
-    // Check promotion if provided
+    // Apply promotion if provided
     let promotionId = null;
     if (promotionCode) {
-      const { data: promotion } = await supabase
-        .from('Promotion')
-        .select('*')
-        .eq('code', promotionCode)
-        .eq('isActive', true)
-        .gte('endDate', new Date().toISOString())
-        .single();
+      const promotion = await prisma.promotion.findUnique({
+        where: { code: promotionCode }
+      });
 
-      if (promotion) {
+      if (promotion && promotion.isActive && 
+          new Date() >= promotion.startDate && 
+          new Date() <= promotion.endDate) {
         promotionId = promotion.id;
+        
         if (promotion.type === 'Percentage') {
           discount = subtotal * (promotion.value / 100);
         } else {
-          discount = Math.min(promotion.value, subtotal);
+          discount = promotion.value;
         }
-        if (promotion.maxDiscount) {
-          discount = Math.min(discount, promotion.maxDiscount);
+
+        if (promotion.maxDiscount && discount > promotion.maxDiscount) {
+          discount = promotion.maxDiscount;
         }
       }
     }
 
-    const taxAmount = 0; // Calculate tax based on location
-    const shippingAmount = 0; // Calculate shipping
-    const totalAmount = subtotal - discount + taxAmount + shippingAmount;
+    const taxAmount = subtotal * 0.08; // 8% tax rate
+    const shippingAmount = ecoShipping ? 5.99 : 9.99;
+    const totalAmount = subtotal + taxAmount + shippingAmount - discount;
 
-    // Create order
-    const { data: order, error: orderError } = await supabase
-      .from('Order')
-      .insert({
-        userId,
-        currency: currency || 'USD',
-        subtotal,
-        taxAmount,
-        shippingAmount,
-        totalAmount,
-        shippingRoute,
-        ecoShipping: ecoShipping || false,
-        carbonSaved: carbonSaved || 0,
-        promotionId,
-        shippingAddressId,
-        billingAddressId,
-        paymentMethodId,
-        notes
-      })
-      .select()
-      .single();
+    // Create order with items in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const newOrder = await (tx as any).order.create({
+        data: {
+          userId,
+          status: 'Pending',
+          currency: currency || 'USD',
+          subtotal,
+          taxAmount,
+          shippingAmount,
+          totalAmount,
+          shippingRoute,
+          ecoShipping: ecoShipping || false,
+          carbonSaved: carbonSaved || 0,
+          promotionId,
+          shippingAddressId,
+          billingAddressId,
+          paymentMethodId,
+          notes
+        }
+      });
 
-    if (orderError) {
-      console.error('Error creating order:', orderError);
-      return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
-    }
+      // Create order items
+      await (tx as any).orderItem.createMany({
+        data: items.map((item: OrderItemInput) => ({
+          orderId: newOrder.id,
+          partId: item.partId,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      });
 
-    // Create order items
-    const orderItems = items.map((item: OrderItemInput) => ({
-      orderId: order.id,
-      partId: item.partId,
-      quantity: item.quantity,
-      price: item.price,
-      discount: discount * (item.quantity * item.price / subtotal) // Pro-rate discount
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('OrderItem')
-      .insert(orderItems);
-
-    if (itemsError) {
-      console.error('Error creating order items:', itemsError);
-      // Rollback order if items creation fails
-      await supabase.from('Order').delete().eq('id', order.id);
-      return NextResponse.json({ error: 'Failed to create order items' }, { status: 500 });
-    }
-
-    // Update promotion usage
-    if (promotionId) {
-      // Get current usage count
-      const { data: currentPromotion } = await supabase
-        .from('Promotion')
-        .select('usageCount')
-        .eq('id', promotionId)
-        .single();
-
-      if (currentPromotion) {
-        await supabase
-          .from('Promotion')
-          .update({ usageCount: currentPromotion.usageCount + 1 })
-          .eq('id', promotionId);
+      // Update promotion usage count if used
+      if (promotionId) {
+        await (tx as any).promotion.update({
+          where: { id: promotionId },
+          data: {
+            usageCount: { increment: 1 }
+          }
+        });
       }
-    }
 
-    // Fetch complete order with items
-    const { data: completeOrder, error: fetchError } = await supabase
-      .from('Order')
-      .select(`
-        *,
-        user:User(name, email),
-        promotion:Promotion(code, description),
-        shippingAddress:Address(street, city, state, zipCode, country),
-        billingAddress:Address(street, city, state, zipCode, country),
-        paymentMethod:PaymentMethod(type, lastFour),
-        items:OrderItem(
-          id,
-          quantity,
-          price,
-          discount,
-          part:Part(name, sku)
-        )
-      `)
-      .eq('id', order.id)
-      .single();
+      return newOrder;
+    });
 
-    if (fetchError) {
-      console.error('Error fetching complete order:', fetchError);
-      return NextResponse.json(completeOrder, { status: 201 }); // Still return success
-    }
-
-    return NextResponse.json(completeOrder, { status: 201 });
-  } catch (error) {
-    console.error('Server error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(order, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating order:', error);
+    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
   }
 }
